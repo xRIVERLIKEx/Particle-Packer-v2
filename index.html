@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Corrected from UTF-RTL which is not a valid charset -->
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Particle Pack Generator</title>
     <!-- Load Tailwind CSS -->
@@ -177,7 +177,6 @@
         let currentWandTextureFile = null; // The File object for the wand
 
         // --- NEW: Map to store built-in wand data ---
-        // REMOVED: const builtInWandBase64 = new Map();
         const builtInWandBlobs = new Map();
 
         // --- NEW: Define the wand filenames and their IDs ---
@@ -198,7 +197,6 @@
         const packDescInput = document.getElementById('pack-desc');
         const packIconInput = document.getElementById('pack-icon'); // Icon input
         const packIconFeedback = document.getElementById('pack-icon-feedback'); // Icon feedback
-        // REMOVED clearWandTextureInput and clearWandFeedback
         const jsonFileInput = document.getElementById('json-file-input');
         
         const particleListSection = document.getElementById('particle-list-section');
@@ -207,7 +205,6 @@
         const step2Section = document.getElementById('step-2-json'); // Renamed
         const step3Section = document.getElementById('step-3-textures'); // Renamed
         const textureUploadsContainer = document.getElementById('texture-uploads-container');
-        // REMOVED: const currentWandTextureInput = document.getElementById('current-wand-texture');
         const wandSelectionContainer = document.getElementById('wand-selection-container'); // NEW
         const currentWandFeedback = document.getElementById('current-wand-feedback');
         
@@ -224,11 +221,6 @@
         const copyButton = document.getElementById('copy-button');
 
         // --- Helper Functions ---
-
-        /**
-         * Converts a Base64 data URL to a Blob object.
-         */
-        // REMOVED: function dataURLtoBlob(dataurl) { ... }
         
         /**
          * Generates a random UUID.
@@ -247,7 +239,6 @@
         function handlePackIconUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                // Optional: Check if it's a PNG and square?
                 packIconFile = file;
                 packIconFeedback.textContent = `✅ Icon selected: ${file.name}`;
                 packIconFeedback.classList.remove('hidden');
@@ -302,7 +293,6 @@
             const nameValid = packNameInput.value.trim() !== '';
             const descValid = packDescInput.value.trim() !== '';
             const particlesAdded = particleQueue.length > 0;
-            // We know the clear wand is ready because it's built-in.
 
             if (nameValid && descValid && particlesAdded) {
                 stepGenerate.classList.remove('hidden');
@@ -330,69 +320,49 @@
                     const jsonString = e.target.result;
                     let tempJson = JSON.parse(jsonString); // Parse once to validate
                     
-                    // Basic validation for Snowstorm file
                     if (!tempJson.particle_effect || !tempJson.particle_effect.description) {
                         throw new Error("This doesn't look like a valid Snowstorm JSON file.");
                     }
 
-                    // Get the identifier
                     currentIdentifier = tempJson.particle_effect.description.identifier;
                     if (!currentIdentifier || !currentIdentifier.includes(':')) {
                         throw new Error("JSON must have a valid 'identifier' (e.g., 'namespace:particle_name').");
                     }
                     
                     // --- NEW LOGIC: Unique Texture Renaming ---
-                    // 1. Get a unique prefix from the filename
                     const particlePrefix = currentOriginalFileName
-                        .replace(/.json$/i, '') // remove .json
-                        .replace(/[^a-z0-9]/gi, '_'); // sanitize
+                        .replace(/.json$/i, '')
+                        .replace(/[^a-z0-9]/gi, '_'); // FIXED: Was [^a-z0-0]
 
-                    // 2. Find all original texture paths
-                    // This regex finds all strings like "textures/..."
                     const regex = /"(textures\/.*?)"/g;
                     const matches = [...jsonString.matchAll(regex)].map(m => m[1]);
-                    const originalPaths = new Set(matches); // Use the captured group 1
+                    const originalPaths = new Set(matches);
 
                     let modifiedJsonString = jsonString;
-                    currentRequiredTextures.clear(); // Clear for this new particle
+                    currentRequiredTextures.clear(); 
 
-                    // 3. Create new paths and replace them in the string
                     originalPaths.forEach(originalPath => {
                         const pathParts = originalPath.split('/');
-                        const fileName = pathParts.pop(); // e.g., "flame.png"
-                        
-                        // Create a new unique filename
+                        const fileName = pathParts.pop();
                         const newFileName = `${particlePrefix}_${fileName}`; 
-                        
-                        // Create a new path. Let's put them in a 'particles' subfolder
-                        // "textures/particles/my_particle_flame.png"
                         const newPath = `textures/particles/${newFileName}`; 
                         
                         currentRequiredTextures.add(newPath);
-
-                        // Replace all instances of the old path *in the string* with the new one
-                        // We must be careful to only replace the exact string "textures/path"
                         modifiedJsonString = modifiedJsonString.replace(new RegExp(`"${originalPath}"`, 'g'), `"${newPath}"`);
                     });
 
-                    // 4. Re-parse the JSON with the *modified* paths
                     currentJson = JSON.parse(modifiedJsonString);
                     // --- END NEW LOGIC ---
 
-                    // Figure out which textures are *new*
                     currentNewTexturesToUpload.clear();
                     currentRequiredTextures.forEach(path => {
-                        // Since paths are now unique (e.g., "textures/particles/particle1_flame.png"),
-                        // we just check if this *exact* path has been provided.
                         if (!allUploadedTextures.has(path)) {
                             currentNewTexturesToUpload.add(path);
                         }
                     });
 
-                    // Render the texture upload inputs
                     renderTextureInputs();
-                    // Show the wand texture uploader
-                    step3Section.classList.remove('hidden'); // This was step 4, now 3
+                    step3Section.classList.remove('hidden');
                     validateCurrentParticleState();
 
                 } catch (err) {
@@ -413,10 +383,9 @@
          * Creates and displays file input fields for *only* new, un-uploaded textures.
          */
         function renderTextureInputs() {
-            textureUploadsContainer.innerHTML = ''; // Clear previous inputs
+            textureUploadsContainer.innerHTML = '';
             
             if (currentNewTexturesToUpload.size === 0 && currentJson) {
-                // This particle uses no *new* textures
                 textureUploadsContainer.innerHTML = '<p class="text-gray-300 font-medium text-center">This particle uses textures you have already provided.</p>';
             } else if (currentNewTexturesToUpload.size > 0) {
                 currentNewTexturesToUpload.forEach(path => {
@@ -433,27 +402,23 @@
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.id = inputId;
-                    input.accept = 'image/png'; // Only allow PNGs as they are standard
+                    input.accept = 'image/png';
                     input.className = "w-full bg-gray-600 border border-gray-500 rounded-lg p-2";
                     
-                    // Store the required path in the input's dataset
                     input.dataset.path = path; 
                     
                     input.addEventListener('change', (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                            allUploadedTextures.set(path, file); // Add to GLOBAL map
-                            // Add a visual cue
+                            allUploadedTextures.set(path, file);
                             label.textContent = `✅ ${path} (Uploaded: ${file.name})`;
                             label.classList.add('text-green-400');
-                            // This texture is now provided, so remove it from the "needed" set
                             currentNewTexturesToUpload.delete(path);
                         } else {
-                            allUploadedTextures.delete(path); // Remove from GLOBAL map
-                            // Visual cue
+                            allUploadedTextures.delete(path);
                             label.textContent = `Required Path: ${path}`;
                             label.classList.remove('text-green-400');
-                            currentNewTexturesToUpload.add(path); // Re-add to "needed" set
+                            currentNewTexturesToUpload.add(path);
                         }
                         validateCurrentParticleState();
                     });
@@ -473,15 +438,12 @@
             const selectedButton = event.currentTarget;
             const wandId = selectedButton.dataset.wandId;
 
-            // Update UI: Remove border from all, add to selected
             const allButtons = wandSelectionContainer.querySelectorAll('button');
             allButtons.forEach(btn => btn.classList.remove('border-blue-500', 'ring-2', 'ring-blue-500'));
             selectedButton.classList.add('border-blue-500', 'ring-2', 'ring-blue-500');
 
-            // Set the active wand file
             currentWandTextureFile = builtInWandBlobs.get(wandId);
 
-            // Show feedback
             currentWandFeedback.textContent = `✅ ${wandId} selected.`;
             currentWandFeedback.classList.remove('hidden');
 
@@ -499,13 +461,11 @@
             currentNewTexturesToUpload.clear();
             currentWandTextureFile = null;
 
-            jsonFileInput.value = ''; // Clear file input
-            step3Section.classList.add('hidden'); // This was step 4, now 3
+            jsonFileInput.value = '';
+            step3Section.classList.add('hidden');
             textureUploadsContainer.innerHTML = '';
-            // REMOVED: currentWandTextureInput.value = '';
             currentWandFeedback.classList.add('hidden');
 
-            // NEW: Deselect all wand buttons
             const allButtons = wandSelectionContainer.querySelectorAll('button');
             allButtons.forEach(btn => btn.classList.remove('border-blue-500', 'ring-2', 'ring-blue-500'));
             
@@ -517,7 +477,7 @@
          * Updates the list of added particles in the UI.
          */
         function updateParticleListUI() {
-            particleListContainer.innerHTML = ''; // Clear list
+            particleListContainer.innerHTML = '';
             if (particleQueue.length === 0) {
                 particleListSection.classList.add('hidden');
                 return;
@@ -538,35 +498,29 @@
         function handleAddParticleClick() {
             if (addParticleButton.disabled || !currentJson || !currentWandTextureFile) return;
 
-            // --- NEW: Add the wand texture to the global map ---
-            // We use the identifier to create a unique texture path
             const wandTextureName = currentIdentifier.split(':')[1] + '_wand';
             const wandTexturePath = `textures/items/${wandTextureName}.png`;
             allUploadedWandTextures.set(wandTexturePath, currentWandTextureFile);
             
-            // --- NEW: Generate anchor ID ---
-            const anchorId = `${currentIdentifier}_anchor`; // e.g., cleverlike:sparkle_anchor
-            // ---
+            const anchorId = `${currentIdentifier}_anchor`;
 
-            // Add to queue
             particleQueue.push({
                 json: currentJson,
                 originalFileName: currentOriginalFileName,
                 identifier: currentIdentifier,
-                wandTexturePath: wandTexturePath, // Store the *new* path
-                wandTextureShortName: wandTextureName, // e.g., "sparkle_wand"
-                anchorId: anchorId // Store the anchor ID
+                wandTexturePath: wandTexturePath,
+                wandTextureShortName: wandTextureName,
+                anchorId: anchorId
             });
 
-            // Update UI
             updateParticleListUI();
             resetCurrentParticle();
-            validatePackState(); // Check if we can enable the final "Generate" button
+            validatePackState();
         }
 
         /**
          * Creates a Behavior Pack manifest.json file content.
-         * FIXED: Updated min_engine_version
+         * FIXED: Updated type from "data" to "script"
          */
         function createBPManifest(name, desc, bp_uuid, bp_module_uuid, rp_uuid) {
             return {
@@ -576,18 +530,19 @@
                     "description": desc,
                     "uuid": bp_uuid,
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 21, 0] // FIXED
+                    "min_engine_version": [1, 21, 0]
                 },
                 "modules": [
                     {
-                        "type": "data",
+                        // *** THIS IS THE FIX: "script" tells the game to load items/functions ***
+                        "type": "script", 
                         "uuid": bp_module_uuid,
                         "version": [1, 0, 0]
                     }
                 ],
                 "dependencies": [
                     {
-                        "uuid": rp_uuid, // Depends on the Resource Pack
+                        "uuid": rp_uuid,
                         "version": [1, 0, 0]
                     }
                 ]
@@ -596,7 +551,6 @@
 
         /**
          * Creates a Resource Pack manifest.json file content.
-         * FIXED: Updated min_engine_version
          */
         function createRPManifest(name, desc, rp_uuid, rp_module_uuid) {
             return {
@@ -606,7 +560,7 @@
                     "description": desc,
                     "uuid": rp_uuid,
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 21, 0] // FIXED
+                    "min_engine_version": [1, 21, 0]
                 },
                 "modules": [
                     {
@@ -620,23 +574,21 @@
 
         /**
          * Creates the JSON for a wand's BEHAVIOR file.
-         * FIXED: Updated format_version, removed minecraft:hand_equipped
          */
         function createWandItemBP(id, eventName) {
             return {
-                "format_version": "1.19.0", // FIXED
+                "format_version": "1.19.0",
                 "minecraft:item": {
                     "description": {
                         "identifier": id,
-                        "category": "equipment", // This makes it searchable
-                        "menu_category": { // This groups it in creative
+                        "category": "equipment",
+                        "menu_category": {
                             "category": "equipment",
                             "group": "itemGroup.name.wand"
                         }
                     },
                     "components": {
                         "minecraft:max_stack_size": 1,
-                        // "minecraft:hand_equipped": true, // REMOVED: Moved to RP
                         "minecraft:on_use": {
                             "on_use": {
                                 "event": eventName,
@@ -645,13 +597,13 @@
                         },
                         "minecraft:cooldown": {
                             "category": "wand",
-                            "duration": 0.5 // 0.5 second cooldown
+                            "duration": 0.5
                         }
                     },
                     "events": {
-                        [eventName]: { // Computed property name
+                        [eventName]: {
                             "run_command": {
-                                "command": [] // Will be filled in by handleGenerateClick
+                                "command": []
                             }
                         }
                     }
@@ -661,22 +613,21 @@
 
         /**
          * Creates the JSON for a wand's RESOURCE file.
-         * FIXED: Updated to modern 1.19.0 format
          */
         function createWandItemRP(id, textureShortName) {
             return {
-                "format_version": "1.19.0", // FIXED
+                "format_version": "1.19.0",
                 "minecraft:item": {
                     "description": {
                         "identifier": id,
-                        "category": "equipment" // ADDED
+                        "category": "equipment"
                     },
                     "components": {
                         "minecraft:icon": {
                             "texture": textureShortName
                         },
                         "minecraft:render_offsets": "tools",
-                        "minecraft:hand_equipped": true // ADDED: Moved from BP
+                        "minecraft:hand_equipped": true
                     }
                 }
             };
@@ -684,11 +635,10 @@
         
         /**
          * NEW: Creates the JSON for a particle anchor (BP).
-         * FIXED: Updated format_version
          */
         function createParticleAnchorBP(anchorId, particleId) {
             return {
-                "format_version": "1.19.0", // FIXED
+                "format_version": "1.19.0",
                 "minecraft:entity": {
                     "description": {
                         "identifier": anchorId,
@@ -698,14 +648,14 @@
                     },
                     "components": {
                         "minecraft:type_family": { "family": [ "particle_anchor", "inanimate" ] },
-                        "minecraft:persistent": {}, // Prevents despawning
+                        "minecraft:persistent": {},
                         "minecraft:physics": { "has_gravity": false, "has_collision": false },
                         "minecraft:pushable": { "is_pushable": false },
                         "minecraft:tick_world": {
-                            "distance_to_players": 32, // Only tick when player is nearby
-                            "interval": 2 // Run every 2 ticks (10 times/sec) to reduce lag
+                            "distance_to_players": 32,
+                            "interval": 2
                         },
-                        "minecraft:behavior.tick_world": { // This is an older component, but still valid
+                        "minecraft:behavior.tick_world": {
                             "priority": 1,
                             "on_tick": {
                                 "event": "spawn_particle"
@@ -730,13 +680,13 @@
          */
         function createParticleAnchorRP(anchorId) {
             return {
-                "format_version": "1.18.0", // This format is fine
+                "format_version": "1.18.0",
                 "minecraft:client_entity": {
                     "description": {
                         "identifier": anchorId,
                         "materials": { "default": "entity_alphatest" },
-                        "textures": {}, // No texture
-                        "geometry": {}, // No geometry
+                        "textures": {},
+                        "geometry": {},
                         "render_controllers": [ "controller.render.invisible" ]
                     }
                 }
@@ -747,7 +697,6 @@
          * Main function to generate the .mcpack file.
          */
         async function handleGenerateClick() {
-            // Re-validate just in case
             if (particleQueue.length === 0) {
                 showError("Please add at least one particle.");
                 return;
@@ -758,111 +707,98 @@
             }
 
             try {
-                // --- Create THREE zips ---
-                const bp_zip = new JSZip(); // Behavior Pack
-                const rp_zip = new JSZip(); // Resource Pack
-                const addon_zip = new JSZip(); // The final .mcaddon
+                const bp_zip = new JSZip();
+                const rp_zip = new JSZip();
+                const addon_zip = new JSZip();
 
                 const packName = packNameInput.value.trim();
                 const packDesc = packDescInput.value.trim();
                 const safeFileName = packName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                const namespace = "cleverlike"; // Hardcode for simplicity
+                const namespace = "cleverlike";
 
-                // --- Generate all UUIDs ---
                 const bp_uuid = generateUUID();
                 const rp_uuid = generateUUID();
                 const bp_module_uuid = generateUUID();
                 const rp_module_uuid = generateUUID();
 
-                // --- 1. Create Manifests ---
                 const bpManifest = createBPManifest(packName, packDesc, bp_uuid, bp_module_uuid, rp_uuid);
                 const rpManifest = createRPManifest(packName, packDesc, rp_uuid, rp_module_uuid);
                 bp_zip.file("manifest.json", JSON.stringify(bpManifest, null, 2));
                 rp_zip.file("manifest.json", JSON.stringify(rpManifest, null, 2));
 
-                // --- 2. Prep RP files & Pack Icons ---
                 let langFileContent = "## Cleverlike Particle Wands\n";
-                // NEW: Add creative inventory group name
                 langFileContent += "itemGroup.name.wand=Particle Wands\n"; 
                 
                 let itemTextureJson = { "resource_pack_name": "cleverlike_items", "texture_data": {} };
                 let particleTextureJson = { "resource_pack_name": "cleverlike_particles", "texture_data": {} };
                 
-                // Add pack_icon.png if it exists to BOTH packs
                 if (packIconFile) {
                     rp_zip.file("pack_icon.png", packIconFile);
-                    bp_zip.file("pack_icon.png", packIconFile); // NEW
+                    bp_zip.file("pack_icon.png", packIconFile);
                 }
                 
-                // NEW: Add the one-time render controller for invisible entities
                 const invisibleController = { "format_version": "1.10.0", "render_controllers": { "controller.render.invisible": { "geometry": "Geometry.default", "materials": [], "textures": [] } } };
                 rp_zip.file("render_controllers/invisible.json", JSON.stringify(invisibleController, null, 2));
 
 
-                // --- 3. Process CLEAR WAND (Hardcoded) ---
+                // --- Process CLEAR WAND (Hardcoded) ---
                 const clearWandId = `${namespace}:clear_wand`;
                 const clearWandShortName = "clear_wand";
                 
-                // BP: Create item JSON
                 let clearWandBP = createWandItemBP(clearWandId, "cleverlike:clear");
                 clearWandBP["minecraft:item"].events["cleverlike:clear"].run_command.command = [
-                    "function clear_particles" // Runs a function
+                    "function clear_particles"
                 ];
                 bp_zip.file("items/clear_wand.json", JSON.stringify(clearWandBP, null, 2));
                 
-                // BP: Create function file (will be added to later)
-                let clearFunction = `particle ${namespace}:empty ~-3 ~-3 ~-3 6 6 6 100 0\n`;
+                // FIXED: This function content ONLY contains kill commands.
+                let clearFunction = `## Clears all particle anchors in a 3-block radius\n`;
                 
-                // RP: Create item JSON
                 const clearWandRP = createWandItemRP(clearWandId, clearWandShortName);
                 rp_zip.file("items/clear_wand.json", JSON.stringify(clearWandRP, null, 2));
                 
-                // RP: Add texture to zip and mapping
-                // The `clearWandTextureFile` blob is already populated
                 rp_zip.file(`textures/items/${clearWandShortName}.png`, clearWandTextureFile);
                 itemTextureJson.texture_data[clearWandShortName] = { "textures": `textures/items/${clearWandShortName}` };
                 
-                // RP: Add lang entry
                 langFileContent += `item.${clearWandId}.name=Clear Wand\n`;
                 
-                // RP: Add the hardcoded "empty" particle definition
+                // This "empty" particle is no longer needed by the function,
+                // but we can leave it in case users want to reference it.
                 const emptyParticle = { "format_version": "1.10.0", "particle_effect": { "description": { "identifier": `${namespace}:empty`, "basic_render_parameters": { "material": "particles_alpha", "texture": "textures/particle/particles" } }, "components": {} } };
                 rp_zip.file("particles/empty.json", JSON.stringify(emptyParticle, null, 2));
 
 
-                // --- 4. Loop through queued particles ---
+                // --- Loop through queued particles ---
                 for (const particle of particleQueue) {
-                    const wandId = `${particle.identifier}_wand`; // e.g., cleverlike:sparkle_wand
-                    const wandShortName = particle.wandTextureShortName; // e.g., sparkle_wand
+                    const wandId = `${particle.identifier}_wand`;
+                    const wandShortName = particle.wandTextureShortName;
                     const particleId = particle.identifier;
                     const particleFileName = particle.originalFileName;
-                    const wandTexturePath = particle.wandTexturePath; // e.g., textures/items/sparkle_wand.png
+                    const wandTexturePath = particle.wandTexturePath;
                     const wandFile = allUploadedWandTextures.get(wandTexturePath);
-                    const anchorId = particle.anchorId; // NEW
-                    const anchorFileName = `${wandShortName}_anchor`; // NEW
+                    const anchorId = particle.anchorId;
+                    const anchorFileName = `${wandShortName}_anchor`;
 
                     // BP: Create item JSON
                     let wandBP = createWandItemBP(wandId, "cleverlike:spawn");
-                    // NEW: Set command to summon the anchor
                     wandBP["minecraft:item"].events["cleverlike:spawn"].run_command.command = [
-                        `summon ${anchorId} ~ ~1 ~` // Spawns anchor 1 block above
+                        `summon ${anchorId} ~ ~1 ~`
                     ];
                     bp_zip.file(`items/${wandShortName}.json`, JSON.stringify(wandBP, null, 2));
 
-                    // NEW (BP): Create anchor entity file
+                    // BP: Create anchor entity file
                     const anchorBP = createParticleAnchorBP(anchorId, particleId);
                     bp_zip.file(`entities/${anchorFileName}.json`, JSON.stringify(anchorBP, null, 2));
 
                     // RP: Create item JSON
                     const wandRP = createWandItemRP(wandId, wandShortName);
-                    rp_zip.file("items/" + wandShortName + ".json", JSON.stringify(wandRP, null, 2)); // Fixed path
+                    rp_zip.file(`items/${wandShortName}.json`, JSON.stringify(wandRP, null, 2));
 
-                    // NEW (RP): Create anchor entity file
+                    // RP: Create anchor entity file
                     const anchorRP = createParticleAnchorRP(anchorId);
-                    // *** THIS IS THE FIX: 'entities/' (plural) ***
-                    rp_zip.file(`entities/${anchorFileName}.json`, JSON.stringify(anchorRP, null, 2)); // Note: plural "entities"
+                    rp_zip.file(`entities/${anchorFileName}.json`, JSON.stringify(anchorRP, null, 2));
 
-                    // RP: Add wand texture to zip and mapping
+                    // RP: Add wand texture
                     rp_zip.file(wandTexturePath, wandFile);
                     itemTextureJson.texture_data[wandShortName] = { "textures": `textures/items/${wandShortName}` };
 
@@ -870,32 +806,27 @@
                     rp_zip.file(`particles/${particleFileName}`, JSON.stringify(particle.json, null, 2));
 
                     // RP: Add lang entry
-                    // Create a nice name, e.g., "Sparkle Wand"
                     let niceName = wandShortName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                     langFileContent += `item.${wandId}.name=${niceName}\n`;
                     
-                    // NEW (BP): Add to the clear wand's function
+                    // BP: Add to the clear wand's function
                     clearFunction += `kill @e[type=${anchorId}, r=3]\n`;
                 }
                 
-                // --- 5. Add all unique, uploaded PARTICLE textures ---
+                // --- Add all unique, uploaded PARTICLE textures ---
                 for (const [path, file] of allUploadedTextures.entries()) {
-                    // path is "textures/particles/particle_flame.png"
                     rp_zip.file(path, file);
-                    
-                    // Add to particle_texture.json
-                    // We need the short path: "particles/particle_flame"
                     const shortPath = path.replace('textures/', '').replace('.png', '');
                     particleTextureJson.texture_data[shortPath] = { "textures": path };
                 }
 
-                // --- 6. Add mapping files and lang file ---
-                bp_zip.file("functions/clear_particles.mcfunction", clearFunction); // Write the completed function file
+                // --- Add mapping files and lang file ---
+                bp_zip.file("functions/clear_particles.mcfunction", clearFunction);
                 rp_zip.file("texts/en_US.lang", langFileContent);
                 rp_zip.file("textures/item_texture.json", JSON.stringify(itemTextureJson, null, 2));
                 rp_zip.file("textures/particle_texture.json", JSON.stringify(particleTextureJson, null, 2));
 
-                // --- 7. Generate Blobs and Final .mcaddon ---
+                // --- Generate Blobs and Final .mcaddon ---
                 const bp_blob = await bp_zip.generateAsync({ type: "blob" });
                 const rp_blob = await rp_zip.generateAsync({ type: "blob" });
 
@@ -904,17 +835,14 @@
 
                 const addon_blob = await addon_zip.generateAsync({ type: "blob" });
                 
-                // --- 8. Create download link ---
                 const url = URL.createObjectURL(addon_blob);
                 downloadLink.href = url;
                 downloadLink.download = `${safeFileName}.mcaddon`;
                 
-                // --- 9. Show all wand /give commands ---
                 let commands = `## Give commands for your wands:\n/give @s ${clearWandId}\n`;
                 commands += particleQueue.map(p => `/give @s ${p.identifier}_wand`).join('\n');
                 commandText.textContent = commands;
                 
-                // --- 10. Show the final section ---
                 stepDownload.classList.remove('hidden');
 
             } catch (err) {
@@ -927,7 +855,6 @@
          * Copies the generated command to the clipboard.
          */
         function copyCommandToClipboard() {
-            // Use execCommand for broader compatibility
             const tempTextArea = document.createElement('textarea');
             tempTextArea.value = commandText.textContent;
             document.body.appendChild(tempTextArea);
@@ -946,9 +873,7 @@
         jsonFileInput.addEventListener('change', handleJsonFile);
         packNameInput.addEventListener('input', validatePackState);
         packDescInput.addEventListener('input', validatePackState);
-        packIconInput.addEventListener('change', handlePackIconUpload); // Listener for icon
-        // REMOVED clearWandTextureInput listener
-        // REMOVED currentWandTextureInput listener
+        packIconInput.addEventListener('change', handlePackIconUpload);
         
         addParticleButton.addEventListener('click', handleAddParticleClick);
         generateButton.addEventListener('click', handleGenerateClick);
@@ -960,10 +885,10 @@
          * NEW: Creates the wand selection buttons from the fetched image paths.
          */
         function renderWandSelector() {
-            wandSelectionContainer.innerHTML = ''; // Clear any existing
+            wandSelectionContainer.innerHTML = '';
             
             for (const [id, filename] of wandFiles.entries()) {
-                if (id === 'clearwand') continue; // Don't add the clear wand to this list
+                if (id === 'clearwand') continue;
 
                 const button = document.createElement('button');
                 button.type = 'button';
@@ -972,9 +897,10 @@
                 button.title = `${id} wand`;
                 
                 const img = document.createElement('img');
-img.src = new URL(filename, document.baseURI).href; // Set src to resolved URL
+                // FIXED: Use the resolved URL
+                img.src = new URL(filename, document.baseURI).href;
                 img.alt = `${id} wand texture`;
-                img.className = "w-full h-auto object-contain"; // Fit inside the button
+                img.className = "w-full h-auto object-contain";
                 
                 button.appendChild(img);
                 button.addEventListener('click', handleWandSelection);
@@ -984,13 +910,11 @@ img.src = new URL(filename, document.baseURI).href; // Set src to resolved URL
 
         /**
          * Initializes the app on load.
-         * NEW: Made this an async function to fetch images.
          */
         async function init() {
             try {
-                // --- NEW: Fetch all wand images and store them as Blobs ---
                 for (const [id, filename] of wandFiles.entries()) {
-                    // FIXED: Resolve the relative path against the document's base URI
+                    // FIXED: Resolve the URL properly
                     const resolvedUrl = new URL(filename, document.baseURI).href;
                     const response = await fetch(resolvedUrl);
                     if (!response.ok) {
@@ -1000,7 +924,6 @@ img.src = new URL(filename, document.baseURI).href; // Set src to resolved URL
                     builtInWandBlobs.set(id, blob);
                 }
                 
-                // Set the clearWandTextureFile from the new map
                 clearWandTextureFile = builtInWandBlobs.get('clearwand');
 
             } catch (e) {
@@ -1008,10 +931,7 @@ img.src = new URL(filename, document.baseURI).href; // Set src to resolved URL
                 showError(`Error: Failed to load wand images. Make sure all wand.png files are uploaded to GitHub. [${e.message}]`);
             }
 
-            // NEW: Create the UI for wand selection
             renderWandSelector();
-
-            // Initial validation checks
             validatePackState();
             validateCurrentParticleState();
         }
