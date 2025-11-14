@@ -526,7 +526,8 @@
                 },
                 "modules": [
                     {
-                        "type": "script", 
+                        // *** THIS IS THE FIX: "data" is for JSON addons, "script" is for JS. ***
+                        "type": "data", 
                         "uuid": bp_module_uuid,
                         "version": [1, 0, 0]
                     }
