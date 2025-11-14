@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"> <!-- Corrected from UTF-RTL which is not a valid charset -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Particle Pack Generator</title>
     <!-- Load Tailwind CSS -->
@@ -11,7 +11,8 @@
     <style>
         /* NEW CSS for the background */
         body {
-            background-image: url('ParticleBG.gif');
+            /* FIXED: Added ./ to the URL */
+            background-image: url('./ParticleBG.gif');
             background-attachment: fixed; /* Makes it not scroll */
             background-size: cover; /* Stretches to fill the screen */
             background-position: center;
@@ -40,7 +41,8 @@
         
         <header class="text-center mb-8">
             <!-- ADDED IMAGE HERE -->
-            <img src="Cleverlike School Header Image.png" alt="Cleverlike School Header" class="mx-auto mb-6" style="max-height: 90px;">
+            <!-- FIXED: Added ./ to the src -->
+            <img src="./Cleverlike School Header Image.png" alt="Cleverlike School Header" class="mx-auto mb-6" style="max-height: 90px;">
             
             <h1 class="text-4xl font-bold text-green-400 mb-2">Particle Pack Generator</h1>
             <p class="text-xl text-gray-300">For Minecraft Bedrock & Education</p>
@@ -145,9 +147,12 @@
                 <div>
                     <h3 classs="text-xl font-semibold mb-2">Your Wand Commands:</h3>
                     <p class="text-gray-400 mb-2">Use these commands in-game to get your wands. Click to copy.</p>
-                    <div id="command-output">
-                        <button id="copy-button" title="Copy to clipboard">Copy</button>
-                        <pre><code id="command-text" class="whitespace-pre-wrap"></code></pre>
+                    <!-- Updated Command Output Styling -->
+                    <div class="bg-gray-900 rounded-lg p-4 text-left relative">
+                        <pre><code id="command-text" class="text-green-300 whitespace-pre-wrap font-mono"></code></pre>
+                        <button id="copy-button" title="Copy to clipboard" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded-md text-sm font-medium transition">
+                            Copy
+                        </button>
                     </div>
                 </div>
             </section>
@@ -172,8 +177,21 @@
         let currentWandTextureFile = null; // The File object for the wand
 
         // --- NEW: Map to store built-in wand data ---
-        const builtInWandBase64 = new Map();
+        // REMOVED: const builtInWandBase64 = new Map();
         const builtInWandBlobs = new Map();
+
+        // --- NEW: Define the wand filenames and their IDs ---
+        // FIXED: Added ./ to all file paths
+        const wandFiles = new Map([
+            ['wand_yellow', './wand.png'],
+            ['wand_red', './wand2.png'],
+            ['wand_orange', './wand3.png'],
+            ['wand_green', './wand4.png'],
+            ['wand_cyan', './wand5.png'],
+            ['wand_purple', './wand6.png'],
+            ['wand_pink', './wand7.png'],
+            ['clearwand', './clearwand.png']
+        ]);
 
         // --- DOM Elements ---
         const packNameInput = document.getElementById('pack-name');
@@ -210,14 +228,7 @@
         /**
          * Converts a Base64 data URL to a Blob object.
          */
-        function dataURLtoBlob(dataurl) {
-            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while(n--){
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], {type:mime});
-        }
+        // REMOVED: function dataURLtoBlob(dataurl) { ... }
         
         /**
          * Generates a random UUID.
@@ -236,6 +247,7 @@
         function handlePackIconUpload(event) {
             const file = event.target.files[0];
             if (file) {
+                // Optional: Check if it's a PNG and square?
                 packIconFile = file;
                 packIconFeedback.textContent = `✅ Icon selected: ${file.name}`;
                 packIconFeedback.classList.remove('hidden');
@@ -941,11 +953,12 @@
         // --- Page Initialization ---
         
         /**
-         * NEW: Creates the wand selection buttons from the built-in Base64 data.
+         * NEW: Creates the wand selection buttons from the fetched image paths.
          */
         function renderWandSelector() {
             wandSelectionContainer.innerHTML = ''; // Clear any existing
-            for (const [id, base64data] of builtInWandBase64.entries()) {
+            
+            for (const [id, filename] of wandFiles.entries()) {
                 if (id === 'clearwand') continue; // Don't add the clear wand to this list
 
                 const button = document.createElement('button');
@@ -955,7 +968,7 @@
                 button.title = `${id} wand`;
                 
                 const img = document.createElement('img');
-                img.src = base64data;
+                img.src = filename; // NEW: Set src to the filename
                 img.alt = `${id} wand texture`;
                 img.className = "w-full h-auto object-contain"; // Fit inside the button
                 
@@ -967,33 +980,28 @@
 
         /**
          * Initializes the app on load.
+         * NEW: Made this an async function to fetch images.
          */
-        function init() {
-            // Define the built-in Clear Wand texture (Base64 from your uploaded 'clearwand.png')
-            builtInWandBase64.set('clearwand', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABgSURBVDhPzZENAEAgEMEyqSAs6b/pLwhJbIAnIqHl+3sBIPgJ+b0CgC+Hb+SNB3mQJzB5mCcwWZinMLNYxCAWYxGGWYxyMMsxjEEYxiEENxjEMAZjFMaY4T8wP3W/2/y+Bw0bA80g3w5ZAAAAAElFTkSuQmCC');
-            
-            // --- NEW: Add all the built-in wand textures ---
-            builtInWandBase64.set('wand_yellow', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACNSURBVDhPzZFRCoAgEET/MooWidgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArhwM4+A1b4wAAAABJRU5ErkJggg=='); // wand.png
-            builtInWandBase64.set('wand_red', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArewM4lW/bVAAAAABJRU5ErkJggg=='); // wand2.png
-            builtInWandBase64.set('wand_orange', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACGSURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArfQMuI2/bRQAAAABJRU5ErkJggg=='); // wand3.png
-            builtInWandBase64.set('wand_green', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArewM4lW/bVAAAAABJRU5ErkJggg=='); // wand4.png
-            builtInWandBase64.set('wand_cyan', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArewM4lW/bVAAAAABJRU5ErkJggg=='); // wand5.png
-            builtInWandBase64.set('wand_purple', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArewM4lW/bVAAAAABJRU5ErkJggg=='); // wand6.png
-            builtInWandBase64.set('wand_pink', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACISURBVDhPzZFRCoAwEET/MooWiZgPq1gsbKwsbAQ7exsJNgkS/iRwGf7D4S4uAYiIFiBBA4QIkCgBAvQIkGgBAvQIkGgBAvQIkBABAiSIkCAAgvj751AGRjuFv1sAgJMdYI6y/u3AqdNlX8oAklA5jhkcchVGYiCGMU5xRGKYwwlGYSiGNo5TnP4fH2S/7gArewM4lW/bVAAAAABJRU5ErkJggg=='); // wand7.png
-            // ---
-
+        async function init() {
             try {
-                // Convert all Base64 to Blobs on load for efficiency
-                for (const [id, base64data] of builtInWandBase64.entries()) {
-                    const blob = dataURLtoBlob(base64data);
+                // --- NEW: Fetch all wand images and store them as Blobs ---
+                for (const [id, filename] of wandFiles.entries()) {
+                    // FIXED: Resolve the relative path against the document's base URI
+                    const resolvedUrl = new URL(filename, document.baseURI).href;
+                    const response = await fetch(resolvedUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${filename} (from ${resolvedUrl})`);
+                    }
+                    const blob = await response.blob();
                     builtInWandBlobs.set(id, blob);
                 }
+                
                 // Set the clearWandTextureFile from the new map
                 clearWandTextureFile = builtInWandBlobs.get('clearwand');
 
             } catch (e) {
-                console.error("Failed to create built-in wand texture:", e);
-                showError("Error: Failed to initialize built-in assets.");
+                console.error("Failed to load built-in wand textures:", e);
+                showError(`Error: Failed to load wand images. Make sure all wand.png files are uploaded to GitHub. [${e.message}]`);
             }
 
             // NEW: Create the UI for wand selection
