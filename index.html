@@ -566,6 +566,7 @@
 
         /**
          * Creates a Behavior Pack manifest.json file content.
+         * FIXED: Updated min_engine_version
          */
         function createBPManifest(name, desc, bp_uuid, bp_module_uuid, rp_uuid) {
             return {
@@ -575,7 +576,7 @@
                     "description": desc,
                     "uuid": bp_uuid,
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 16, 0]
+                    "min_engine_version": [1, 21, 0] // FIXED
                 },
                 "modules": [
                     {
@@ -595,6 +596,7 @@
 
         /**
          * Creates a Resource Pack manifest.json file content.
+         * FIXED: Updated min_engine_version
          */
         function createRPManifest(name, desc, rp_uuid, rp_module_uuid) {
             return {
@@ -604,7 +606,7 @@
                     "description": desc,
                     "uuid": rp_uuid,
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 16, 0]
+                    "min_engine_version": [1, 21, 0] // FIXED
                 },
                 "modules": [
                     {
@@ -618,11 +620,11 @@
 
         /**
          * Creates the JSON for a wand's BEHAVIOR file.
-         * NEW: Added menu_category for creative search.
+         * FIXED: Updated format_version, removed minecraft:hand_equipped
          */
         function createWandItemBP(id, eventName) {
             return {
-                "format_version": "1.16.100",
+                "format_version": "1.19.0", // FIXED
                 "minecraft:item": {
                     "description": {
                         "identifier": id,
@@ -634,7 +636,7 @@
                     },
                     "components": {
                         "minecraft:max_stack_size": 1,
-                        "minecraft:hand_equipped": true,
+                        // "minecraft:hand_equipped": true, // REMOVED: Moved to RP
                         "minecraft:on_use": {
                             "on_use": {
                                 "event": eventName,
@@ -659,21 +661,22 @@
 
         /**
          * Creates the JSON for a wand's RESOURCE file.
-         * NEW: Removed redundant "category"
+         * FIXED: Updated to modern 1.19.0 format
          */
         function createWandItemRP(id, textureShortName) {
             return {
-                "format_version": "1.10.0",
+                "format_version": "1.19.0", // FIXED
                 "minecraft:item": {
                     "description": {
-                        "identifier": id
-                        // "category" removed, it's only needed in BP
+                        "identifier": id,
+                        "category": "equipment" // ADDED
                     },
                     "components": {
                         "minecraft:icon": {
                             "texture": textureShortName
                         },
-                        "minecraft:render_offsets": "tools"
+                        "minecraft:render_offsets": "tools",
+                        "minecraft:hand_equipped": true // ADDED: Moved from BP
                     }
                 }
             };
@@ -681,10 +684,11 @@
         
         /**
          * NEW: Creates the JSON for a particle anchor (BP).
+         * FIXED: Updated format_version
          */
         function createParticleAnchorBP(anchorId, particleId) {
             return {
-                "format_version": "1.16.100",
+                "format_version": "1.19.0", // FIXED
                 "minecraft:entity": {
                     "description": {
                         "identifier": anchorId,
@@ -701,7 +705,7 @@
                             "distance_to_players": 32, // Only tick when player is nearby
                             "interval": 2 // Run every 2 ticks (10 times/sec) to reduce lag
                         },
-                        "minecraft:behavior.tick_world": {
+                        "minecraft:behavior.tick_world": { // This is an older component, but still valid
                             "priority": 1,
                             "on_tick": {
                                 "event": "spawn_particle"
@@ -726,7 +730,7 @@
          */
         function createParticleAnchorRP(anchorId) {
             return {
-                "format_version": "1.18.0",
+                "format_version": "1.18.0", // This format is fine
                 "minecraft:client_entity": {
                     "description": {
                         "identifier": anchorId,
@@ -968,7 +972,7 @@
                 button.title = `${id} wand`;
                 
                 const img = document.createElement('img');
-                img.src = filename; // NEW: Set src to the filename
+img.src = new URL(filename, document.baseURI).href; // Set src to resolved URL
                 img.alt = `${id} wand texture`;
                 img.className = "w-full h-auto object-contain"; // Fit inside the button
                 
