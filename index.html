@@ -576,19 +576,10 @@
                 "minecraft:item": {
                     "description": {
                         "identifier": id,
-                        "category": "equipment",
-                        "menu_category": {
-                            "category": "equipment",
-                            "group": "itemGroup.name.wand"
-                        }
+                        "category": "equipment"
                     },
                     "components": {
                         "minecraft:max_stack_size": 1,
-                        "minecraft:cooldown": {
-                            "category": "wand",
-                            "duration": 0.5
-                        },
-                        // REPLACED on_use/events with entity_placer
                         "minecraft:entity_placer": {
                             "entity": entityToPlace
                         }
