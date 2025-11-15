@@ -527,6 +527,8 @@
                 "modules": [
                     {
                         // *** THIS IS THE FIX: "data" is for JSON addons, "script" is for JS. ***
+                        // *** Per bedrock.dev, "data" is correct for addons that *don't* use scripting. ***
+                        // *** The previous value "script" was WRONG and is now fixed to "data". ***
                         "type": "data", 
                         "uuid": bp_module_uuid,
                         "version": [1, 0, 0]
@@ -842,8 +844,10 @@
                 // --- Add all unique, uploaded PARTICLE textures ---
                 for (const [path, file] of allUploadedTextures.entries()) {
                     rp_zip.file(path, file);
-                    const shortPath = path.replace('textures/', '').replace('.png', '');
-                    particleTextureJson.texture_data[shortPath] = { "textures": path };
+                    // FIXED: Path for particle_texture.json must be relative to textures folder
+                    const shortPath = path.replace('textures/', ''); 
+                    const textureKey = shortPath.replace('.png', '').replace(/\//g, '_'); // e.g. particles_sparkle
+                    particleTextureJson.texture_data[textureKey] = { "textures": shortPath }; // e.g. "textures": "particles/sparkle"
                 }
 
                 // --- Add clear_anchor BP file (now that commands are populated) ---
@@ -851,10 +855,12 @@
                 bp_zip.file("entities/clear_anchor.json", JSON.stringify(clearAnchorBP, null, 2));
 
                 // --- Add mapping files and lang file ---
-                // function file no longer needed
                 rp_zip.file("texts/en_US.lang", langFileContent);
                 rp_zip.file("textures/item_texture.json", JSON.stringify(itemTextureJson, null, 2));
-                rp_zip.file("textures/particle_texture.json", JSON.stringify(particleTextureJson, null, 2));
+                
+                // *** THIS IS THE FIX: The file MUST be in "particles/" not "textures/" ***
+                rp_zip.file("particles/particle_texture.json", JSON.stringify(particleTextureJson, null, 2));
+
 
                 // --- Generate Blobs and Final .mcaddon ---
                 const bp_blob = await bp_zip.generateAsync({ type: "blob" });
@@ -927,7 +933,11 @@
                 button.title = `${id} wand`;
                 
                 const img = document.createElement('img');
-                img.src = new URL(filename, document.baseURI).href;
+                // *** THIS IS THE FIX: Construct URL relative to the window's location ***
+                const pageUrl = new URL(window.location.href);
+                const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
+                img.src = new URL(filename, baseUrl).href;
+                
                 img.alt = `${id} wand texture`;
                 img.className = "w-full h-auto object-contain";
                 
@@ -942,8 +952,12 @@
          */
         async function init() {
             try {
+                // *** THIS IS THE FIX: Construct URL relative to the window's location ***
+                const pageUrl = new URL(window.location.href);
+                const baseUrl = pageUrl.href.substring(0, pageUrl.href.lastIndexOf('/') + 1);
+
                 for (const [id, filename] of wandFiles.entries()) {
-                    const resolvedUrl = new URL(filename, document.baseURI).href;
+                    const resolvedUrl = new URL(filename, baseUrl).href;
                     const response = await fetch(resolvedUrl);
                     if (!response.ok) {
                         throw new Error(`Failed to load ${filename} (from ${resolvedUrl})`);
