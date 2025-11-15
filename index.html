@@ -844,10 +844,12 @@
                 // --- Add all unique, uploaded PARTICLE textures ---
                 for (const [path, file] of allUploadedTextures.entries()) {
                     rp_zip.file(path, file);
-                    // FIXED: Path for particle_texture.json must be relative to textures folder
-                    const shortPath = path.replace('textures/', ''); 
-                    const textureKey = shortPath.replace('.png', '').replace(/\//g, '_'); // e.g. particles_sparkle
-                    particleTextureJson.texture_data[textureKey] = { "textures": shortPath }; // e.g. "textures": "particles/sparkle"
+                    // Keep the shortPath (relative to textures/) as the texture key so
+                    // the particle mappings match the texture references used in
+                    // particle JSON files (e.g. "particles/magic_particle_wool_colored_white").
+                    const shortPath = path.replace('textures/', '');
+                    const textureKey = shortPath.replace('.png', ''); // e.g. "particles/magic_particle_wool_colored_white"
+                    particleTextureJson.texture_data[textureKey] = { "textures": shortPath };
                 }
 
                 // --- Add clear_anchor BP file (now that commands are populated) ---
@@ -858,8 +860,8 @@
                 rp_zip.file("texts/en_US.lang", langFileContent);
                 rp_zip.file("textures/item_texture.json", JSON.stringify(itemTextureJson, null, 2));
                 
-                // *** THIS IS THE FIX: The file MUST be in "particles/" not "textures/" ***
-                rp_zip.file("particles/particle_texture.json", JSON.stringify(particleTextureJson, null, 2));
+                // Particle texture mapping must live under the 'textures' folder
+                rp_zip.file("textures/particle_texture.json", JSON.stringify(particleTextureJson, null, 2));
 
 
                 // --- Generate Blobs and Final .mcaddon ---
