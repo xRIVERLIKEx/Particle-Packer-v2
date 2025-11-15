@@ -791,13 +791,14 @@
 
                 // --- Loop through queued particles ---
                 for (const particle of particleQueue) {
-                    const wandId = `${particle.identifier}_wand`;
+                    const particleNameOnly = particle.identifier.includes(':') ? particle.identifier.split(':')[1] : particle.identifier;
+                    const wandId = `${namespace}:${particleNameOnly}_wand`;
                     const wandShortName = particle.wandTextureShortName;
                     const particleId = particle.identifier;
                     const particleFileName = particle.originalFileName;
                     const wandTexturePath = particle.wandTexturePath;
                     const wandFile = allUploadedWandTextures.get(wandTexturePath);
-                    const anchorId = particle.anchorId;
+                    const anchorId = `${namespace}:${particleNameOnly}_anchor`;
                     const anchorFileName = `${wandShortName}_anchor`;
 
                     // BP: Create item JSON
@@ -869,7 +870,10 @@
                 downloadLink.download = `${safeFileName}.mcaddon`;
                 
                 let commands = `## Give commands for your wands:\n/give @s ${clearWandId}\n`;
-                commands += particleQueue.map(p => `/give @s ${p.identifier}_wand`).join('\n');
+                commands += particleQueue.map(p => {
+                    const nameOnly = p.identifier.includes(':') ? p.identifier.split(':')[1] : p.identifier;
+                    return `/give @s ${namespace}:${nameOnly}_wand`;
+                }).join('\n');
                 commandText.textContent = commands;
                 
                 stepDownload.classList.remove('hidden');
